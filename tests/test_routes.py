@@ -32,6 +32,7 @@ from service import app
 from service.common import status
 from service.models import db, init_db, Product
 from tests.factories import ProductFactory
+from random import randint, randrange
 
 # Disable all but critical errors during normal test run
 # uncomment for debugging failing tests
@@ -166,6 +167,70 @@ class TestProductRoutes(TestCase):
     #
     # ADD YOUR TEST CASES HERE
     #
+
+    def test_get_a_product(self):
+        """It should get the product for the given id"""
+        amount = randint(5, 50)
+        products = self._create_products(amount)
+        to_search = products[randrange(0, amount)]
+
+        response = self.client.get(f"{BASE_URL}/{to_search.id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertEqual(data['id'], to_search.id)
+        self.assertEqual(data['name'], to_search.name)
+
+    def test_get_products(self):
+        """It should get all products stored in the database"""
+        amount = randint(5, 50)
+        products = self._create_products(amount)
+
+        response = self.client.get(BASE_URL)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.get_json()
+        self.assertEqual(len(products), len(data))
+
+    def test_update_product(self):
+        """It should update the defined fields of the record"""
+        amount = randint(5, 50)
+        products = self._create_products(amount)
+
+        new_description = "Deprecated product"
+        upd_prod = products[randrange(0, amount)]
+        upd_prod.description = new_description
+
+        response = self.client.put(f"{BASE_URL}/{upd_prod.id}", json=upd_prod.serialize())
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        data = response.get_json()
+
+        self.assertEqual(data['description'], new_description)
+
+    def test_delete_product(self):
+        """It should delete the product with the given id"""
+        amount = randint(5, 50)
+        products = self._create_products(amount)
+
+        original_count = self.get_product_count()
+
+        del_product = products[randrange(0, amount)]
+        response = self.client.delete(f"{BASE_URL}/{del_product.id}")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+        # Check deletion of the product
+        response = self.client.get(f"{BASE_URL}/{del_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Check that only one product was removed
+        upd_count = self.get_product_count()
+        self.assertEqual(upd_count, original_count - 1)
 
     ######################################################################
     # Utility functions
