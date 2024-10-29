@@ -104,7 +104,10 @@ def step_impl(context, element_name):
 # to get the element id of any button
 ##################################################################
 
-## UPDATE CODE HERE ##
+@when(u'I press the "{button}" button')
+def step_impl(context):
+    button_id = button.lower() + "-btn"
+    context.driver.find_element_by_id(button_id).click()
 
 ##################################################################
 # This code works because of the following naming convention:
@@ -132,3 +135,29 @@ def step_impl(context, element_name, text_string):
     )
     element.clear()
     element.send_keys(text_string)
+
+# Using variable substitution with the "presence" substring allows to handle appereance or not
+@then(u'I should{presence}see "{element_name}" in the results')
+def step_impl(context):
+    if presence == " ":
+        presence = True
+    elif "not" in precense:
+        presence = False
+    else:
+        raise Error("Invalid format for step")
+
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(By.ID, 'search_results', name)
+    )
+    assert found == presence
+
+#@then(u'I should not see "{element_name}" in the results')
+#def step_impl(context):
+#    raise NotImplementedError(u'STEP: Then I should see "Hat" in the results')
+
+@then('I should see the message "{message}"')
+def step_impl(context, message):
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element((By.ID, 'flash_message'), message)
+    )
+    assert(found)
